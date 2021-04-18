@@ -104,4 +104,4 @@ def create_res_xls(
     for i in range(3, 5):
         sheet.cell(row=i+19, column=3, value=other_stats[i])
 
-    workbook.save(filename=f"../results.xlsx")
+    workbook.save(filename=f"./data/results.xlsx")

@@ -1,11 +1,13 @@
 from itertools import combinations
 from statistics import mean, mode
+import time
 
 from Levenshtein._levenshtein import distance
 from numpy import histogram
 from scipy.stats import sem, variation
 
-from SequencePositionStats import SequencePositionStats
+from db.SequencePositionStats import SequencePositionStats
+from db.ExecutionTime import ExecutionTime
 from Bio.Seq import Seq
 
 
@@ -22,7 +24,7 @@ def init_seq_position_stats(length=377):
 
 
 def reset_seq_position_stats():
-    for seq_positions in SequencePositionStats.objects().sort_by('position'):
+    for seq_positions in SequencePositionStats.objects().order_by('position'):
         seq_positions.update(set__A_count=0)
         seq_positions.update(set__T_count=0)
         seq_positions.update(set__G_count=0)
@@ -40,11 +42,34 @@ def update_seq_pos_stats(position, nucleoid):
         SequencePositionStats.objects(position=position).update(inc__C_count=1)
 
 
-def count_nucleoid_stats(seq):
-    for i in range(len(seq)):
-        nucleoid = seq[i]
-        print(f'Nucleoid: {nucleoid}, position: {i}')
-        update_seq_pos_stats(i, nucleoid)
+def count_nucleoid_stats(record):
+    if record.length != 377:
+        for i in range(0, 377):
+            nucleoid = record.sequence[i]
+            update_seq_pos_stats(i, nucleoid)
+    else:
+        for i in range(len(record.sequence)):
+            nucleoid = record.sequence[i]
+            update_seq_pos_stats(i, nucleoid)
+
+
+# def count_nucleoid_stats(seq):
+#     for i in range(len(seq)):
+#         nucleoid = seq[i]
+#         print(f'Nucleoid: {nucleoid}, position: {i}')
+#         update_seq_pos_stats(i, nucleoid)
+
+
+def count_distance(sequence1, sequence2):
+    dis = 0
+    if len(sequence1) != 377:
+        sequence1 = sequence1[:377]
+    if len(sequence2) != 377:
+        sequence2 = sequence2[:377]
+    for i in range(len(sequence1)):
+        if sequence1[i] != sequence2[i]:
+            dis += 1
+    return dis
 
 
 def count_wild_type():
@@ -66,7 +91,7 @@ def count_wild_type():
 def count_distance_distribution(sequences, base_sequence):
     distances = []
     for sequence in sequences:
-        dist = distance(str(sequence), str(base_sequence))
+        dist = count_distance(str(sequence), str(base_sequence))
         distances.append(dist)
     return distances
 
@@ -74,7 +99,7 @@ def count_distance_distribution(sequences, base_sequence):
 def count_paired_distance_distribution(sequences):
     distances = []
     for sequence1, sequence2 in combinations(sequences, 2):
-        dist = distance(str(sequence1), str(sequence2))
+        dist = count_distance(str(sequence1), str(sequence2))
         distances.append(dist)
     return distances
 
